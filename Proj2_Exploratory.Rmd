@@ -1,0 +1,149 @@
+---
+title: "Project 2 Exploratory Analysis"
+author: "Colton Benson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = F}
+# Read in data from online
+library(dplyr)
+library(ggplot2)
+set_theme(theme_bw())
+data <- read.csv("https://raw.githubusercontent.com/CoBens14/STA_310_Proj2/refs/heads/main/data_project2.csv")
+```
+
+
+## Intro Analysis
+
+```{r, include = F}
+# Removing all non-necessary observations
+ficc <- data %>% group_by(PlayerID) %>% filter(GroupID == "FICC", ReqTime == 0, Var2 == 2, 
+                                               Var1 %in% c(1, 2, 3, 4), PlayerID != "FICC_1")
+
+# Manually override datapoint to estimate what acutal time should've been
+ficc$Time[ficc$PlayerID == "FICC_4"] <- (60/21) * 3 + 60
+```
+
+
+```{r, include = F}
+# Create factor variables
+ficc <- ficc %>% mutate(shapes = factor(ifelse(Var1 %in% c(1, 4), 1, 0), levels = c(0,1)), 
+                        colors = factor(ifelse(Var1 %in% c (2, 4), 1, 0), levels = c(0,1)))
+
+```
+
+
+```{r, echo = F}
+# Calculate Data Basics
+ficc %>% ungroup() %>% summarize(mean = mean(Time), sd = sd(Time), n = n())
+```
+
+
+```{r, echo = F}
+# Calculate Data Basics
+ficc %>% group_by(shapes) %>% summarize(mean = mean(Time), sd = sd(Time), n = n())
+```
+
+
+```{r, echo = F}
+ficc %>% group_by(colors) %>% summarize(mean = mean(Time), sd = sd(Time), n = n())
+```
+
+```{r, echo = F}
+ficc %>% group_by(shapes, colors) %>% summarize(mean = mean(Time), sd = sd(Time), n = n())
+```
+
+
+```{r, echo = F}
+ggplot(ficc, aes(x = colors, y = Time)) + geom_point()
+```
+
+```{r, echo = F}
+ggplot(ficc, aes(x = shapes, y = Time)) + geom_jitter(height = 0, width = .02)
+```
+
+
+```{r, echo = F}
+ggplot(ficc, aes(x = Var1, y = Time)) + geom_jitter(height = 0, width = .02)
+```
+
+```{r, echo = F, warning = F}
+# Create group level dataframe
+ficc_factor_level <- ficc %>% group_by(shapes, colors) %>% summarize(mean = mean(Time), sd = sd(Time), n = n())
+
+# Graph Interaction Plot
+ggplot(ficc_factor_level, aes(x = colors, y = mean, color = shapes, group = shapes))+
+  geom_point()+
+  geom_line(linetype = "dashed")
+```
+
+```{r, echo = F, warning = F}
+# Check if transformation is needed
+ficc_factor_level <- ficc_factor_level %>% mutate(log_mean = log(mean), log_sd = log(sd))
+
+ggplot(ficc_factor_level, aes(x = log_mean, y = log_sd))+
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+
+# Transformation might be needed, but assumptions are met without (see below)
+```
+
+## Model Analysis
+
+
+```{r, echo = F}
+mod_add <- aov(Time ~ shapes + colors, data = ficc)
+mod_int <- aov(Time ~ shapes*colors, data = ficc)
+
+summary(mod_add)
+summary(mod_int)
+```
+
+```{r, echo = F}
+model.tables(mod_int, type = "effects")
+```
+
+
+```{r, echo = F}
+plot(mod_add)
+```
+
+
+```{r, echo = F, fig.height = 5, fig.width = 5}
+par(mfrow = c(2,2))
+plot(mod_int)
+```
+
+```{r, echo = F}
+# Graph Interaction Plot
+ggplot(ficc_factor_level, aes(x = colors, y = log_mean, color = shapes, group = shapes))+
+  geom_point() +
+  geom_line(linetype = "dashed")
+```
+
+## Logged Variable Analysis
+
+```{r, include = F}
+# Create logged time variable
+ficc <- ficc %>% mutate(log_time = log(Time))
+```
+
+```{r}
+# Create anova models for log time response
+mod_add_l <- aov(log_time ~ shapes + colors, data = ficc)
+mod_int_l <- aov(log_time ~ shapes*colors, data = ficc)
+
+summary(mod_add_l)
+summary(mod_int_l)
+```
+
+```{r, fig.height = 5, fig.width = 5}
+par(mfrow = c(2,2))
+plot(mod_add_l)
+plot(mod_int_l)
+```
