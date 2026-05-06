@@ -1,0 +1,61 @@
+---
+title: "Project 3"
+author: "Colton Benson"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+survey <- read.csv("https://grinnell-statistics.github.io/sta-310-s26/projects/IYSdata.csv") 
+
+```
+
+```{r}
+survey <- survey %>% filter(X30marijuana != -1 & grade != "6th") %>%
+mutate(SmokedMaryJane = ifelse(X30marijuana == "0 days", 0, 1))
+
+names(survey) <- gsub("\\.", "_", names(survey))
+
+survey_select <- survey %>% dplyr::select(grade, age, gender, SmokedMaryJane, home_rules, home_happy, home_al_drug, home_close, home_talk, home_support, home_talk, home_wrong)
+```
+
+```{r}
+# Filtering out various na values from columns of interest
+survey <- survey %>% filter(home_rules != ".", home_happy != ".", home_al_drug != ".", home_close != ".",
+                            home_talk != ".", home_support != ".", home_wrong != ".", home_wrong != "-1", 
+                            home_chores != "-1", home_know != "-1", home_praise != "-1")
+
+```
+
+```{r}
+survey <- survey %>% mutate(home_rules_b = ifelse(home_rules %in% c("Strongly agree", "Agree"), 1, 0), 
+                                   home_happy_b = ifelse(home_happy %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_al_drug_b = ifelse(home_al_drug %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                                   home_close_b = ifelse(home_close %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_talk_b = ifelse(home_talk %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_support_b = ifelse(home_support %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0))
+
+```
+
+
+```{r}
+model = glm(SmokedMaryJane ~ home_rules + home_happy + home_al_drug, data = survey, family = "binomial")
+summary(model)
+```
+
+
+```{r}
+model_b = glm(SmokedMaryJane ~ home_rules_b + home_happy_b + home_al_drug_b + home_close_b + 
+                home_talk_b + home_support_b + home_wrong + home_praise + home_chores + home_know, data = survey, family = "binomial")
+summary(model_b)
+```
+
+
