@@ -1,0 +1,119 @@
+---
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \hyphenpenalty=10000
+  - \exhyphenpenalty=10000
+  - \usepackage{titling}
+  - \usepackage{placeins}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\centering
+
+\vspace*{\fill}
+
+# Merry Jane: Household Environment and Student Marijuana Usage
+
+Colton Benson, Chris Nguyen, Finn Rowles, Isa Valero Ying
+
+\vspace*{\fill}
+
+\newpage
+
+```{r, include = F}
+library(dplyr)
+library(ggplot2)
+survey <- read.csv("https://grinnell-statistics.github.io/sta-310-s26/projects/IYSdata.csv") 
+```
+
+```{r, include = F}
+survey <- survey %>% filter(X30marijuana != -1 & grade != "6th") %>%
+mutate(SmokedMaryJane = ifelse(X30marijuana == "0 days", 0, 1))
+
+names(survey) <- gsub("\\.", "_", names(survey))
+
+survey_select <- survey %>% dplyr::select(grade, age, gender, SmokedMaryJane, home_rules, home_happy, home_al_drug, home_close, home_talk, home_support, home_talk, home_wrong)
+```
+
+```{r, include = F}
+# Filtering out various na values from columns of interest
+survey <- survey %>% filter(home_rules != ".", home_happy != ".", home_al_drug != ".", home_close != ".",
+                            home_talk != ".", home_support != ".", home_wrong != ".", home_wrong != "-1", 
+                            home_chores != "-1", home_know != "-1", home_praise != "-1")
+
+```
+
+```{r, include = F}
+survey <- survey %>% mutate(home_rules_b = ifelse(home_rules %in% c("Strongly agree", "Agree"), 1, 0), 
+                                   home_happy_b = ifelse(home_happy %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_al_drug_b = ifelse(home_al_drug %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                                   home_close_b = ifelse(home_close %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_talk_b = ifelse(home_talk %in% c("Strongly agree", "Agree"), 1, 0),
+                                   home_support_b = ifelse(home_support %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                                   n_safe_b = ifelse(N_safe %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                            smoke_nic = ifelse(X30cigars == "0 days" & X30_cig == "0 days", 0, 1))
+
+```
+
+\raggedright
+
+## Introduction
+
+## Methodology
+
+$$\text{log}\frac{\pi(\text{Smoked = 1})}{1 - \pi(\text{Smoked = 1})} = \beta_0 + \beta X$$
+
+$\beta$ is a vector of coefficients and $X$ is a vector of explanatory variables of interest, such as whether the youth agreed that they live in a healthy home, there is drug or alcohol abuse in the home, and whether their neighborhood was safe. Another explanatory variable of interest which has several levels if how often parents are aware of the youth's wrong doing. There were also some control variables to account for demographic differences that likely impact marijuana usage, such as gender and grade level.
+
+
+## Results
+
+$\quad$Our primary results of our fitted logistic regression model are found in Table 1 below, which displays the variable in column 1, the coefficient estimate in column 2, the standard error in column 3, the z value in column 4, and the subsequent p-value in column 5. 
+
+```{r, include = F}
+model = glm(SmokedMaryJane ~ smoke_nic + home_happy_b + home_al_drug_b + grade + n_safe_b + gender + home_wrong, 
+            data = survey, 
+            family = "binomial")
+summary(model)
+```
+
+
+```{r, echo = F}
+library(knitr)
+mod_coef <- summary(model)$coefficients
+row.names(mod_coef) <- c("Intercept", "Smoke Nicotine", "Happy Home - Agree", "Alcohol or Drug Abuse in Home - Agree", 
+                         "8th Grade", "Safe Neighborhood - Agree", "Male", "Awareness of Wrong Doing - Never", "Awareness of Wrong Doing - Often", "Awareness of Wrong Doing - Sometimes")
+kable(mod_coef, caption = "Model Results", digits = 3) # note: this errors out so I would recommend not running this code block when editing file
+```
+
+```{r, include = F}
+exp(model$coefficients)
+```
+
+$\quad$The results indicate that majority of the variables have a significant association with marijuana usage. The largest association was with those who smoke nicotine (cigarettes/cigars). The coefficient on smoking nicotine was 2.932, meaning that smoking nicotine is associated with 18.76 times higher predicted odds of using marijuana. Youth who felt that they had a happy home had a coefficient of -0.615, indicating that feeling they lived in a happy home (compared to those felt that they did not live in a happy home) is associated with a .54 times difference in the odds of using marijuana, holding all other variables constant. There were similar results for youth that felt they lived in a safe neighborhood, with a change in predicted odds of using marijuana of .500 times, holding all other variables constant. Compared to youth who felt that their parents "always" found out when they did something wrong, there was no significant difference in predicted marijuana usage among those who only felt that their parents "often" found found out about their wrongdoings. However, youth who responded "sometimes"(1.78) or "never"(2.21) both saw an increase in their odds of using marijuana, indicating an association between the variables. Youth who felt a person in their home had a drug/alcohol abuse problem were associated with higher predicted odds of using marijuana, but with a p-value of .18, we can not reject the null hypothesis that no association exists. 
+
+$\quad$Several control variables were also included in the model. As expected, being in 8th grade in comparison to 11th grade, was associated with a change in the odds of using marijuana by .63 times. There was not found to be a significant difference in marijuana usage among gender, when controlling for other variables in the model, as males were found to have an increase in the log odds of using marijuana of 1.11 times, which is not statistically significant from 1 with a p-value of .560. 
+
+## Discussion
+
+$\quad$Our results indicate that several variables pertaining to a youth's homelife have a significant association with teen marijuana usage, including whether the teen felt they lived in a happy home, lived in a safe neighborhood, whether the teen felt their people in their home had a drug or alcohol problem, and how often a teen's parents find out about their wrong doing. However, our study presents many limitations that prevent causality claims or generalization. The first is that the dataset used is a subset of a survey, so it may not be completely random which participants are included in the data. Another limitation is that this was a survey, so answers may not be completely accurate. There exist concerns that participants would be less willing to share their consumption of substances, oversell their home situation, or vice versa with concerns that teens might find it humorous to provide misleading results that overstate their consumption of substances. 
+
+\newpage
+
+## References
+
+\newpage
+
+## Appendix
+
+
+
