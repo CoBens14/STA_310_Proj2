@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 survey <- read.csv("https://grinnell-statistics.github.io/sta-310-s26/projects/IYSdata.csv") 
-
 ```
 
 ```{r}
@@ -41,16 +40,12 @@ survey <- survey %>% mutate(home_rules_b = ifelse(home_rules %in% c("Strongly ag
                                    home_close_b = ifelse(home_close %in% c("Strongly agree", "Agree"), 1, 0),
                                    home_talk_b = ifelse(home_talk %in% c("Strongly agree", "Agree"), 1, 0),
                                    home_support_b = ifelse(home_support %in% 
-                                                             c("Strongly agree", "Agree"), 1, 0))
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                                   n_safe_b = ifelse(N_safe %in% 
+                                                             c("Strongly agree", "Agree"), 1, 0),
+                            smoke_nic = ifelse(X30cigars == "0 days" & X30_cig == "0 days", 0, 1))
 
 ```
-
-
-```{r}
-model = glm(SmokedMaryJane ~ home_rules + home_happy + home_al_drug, data = survey, family = "binomial")
-summary(model)
-```
-
 
 ```{r}
 model_b = glm(SmokedMaryJane ~ home_rules_b + home_happy_b + home_al_drug_b + home_close_b + 
@@ -58,4 +53,10 @@ model_b = glm(SmokedMaryJane ~ home_rules_b + home_happy_b + home_al_drug_b + ho
 summary(model_b)
 ```
 
+```{r}
+model = glm(SmokedMaryJane ~ home_happy_b + home_al_drug_b + grade + n_safe_b + gender + home_wrong, 
+            data = survey, 
+            family = "binomial")
+summary(model)
+```
 
