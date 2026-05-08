@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 \vspace*{\fill}
 
-# Merry Jane: Household Environment and Student Marijuana Usage
+# Mary Jane: Household Environment and Student Marijuana Usage
 
 Colton Benson, Chris Nguyen, Finn Rowles, Isa Valero Ying
 
@@ -68,12 +68,54 @@ survey <- survey %>% mutate(home_rules_b = ifelse(home_rules %in% c("Strongly ag
 
 ## Introduction
 
+$\quad$As Cannabis legalization expands across the United States, usage patterns among adolescents remains a significant field of interest. Understanding frequency, quantity, and methods of consumption among specific groups is crucial for assessing youth substance risks and designing prevention strategies. According to the CDC, adolescent cannabis use has been linked to several mental health problems such as depression and social anxiety. Extended use of marijuana can also risk the development of temporary psychosis and schizophrenia, particularly for those who start using cannabis at a younger age (CDC, 2025).
+
+$\quad$Previous peer-reviewed literature emphasizes the importance of family and general home life in predicting risk factors. A study published in 2016 found adverse childhood experiences (ACE), such as strained familial relationships and home instability, are strongly associated with increased adolescent substance use (Mennis et al., 2016). Similarly, a study conducted using a logistic regression model further indicates unstable homelife, particularly critical health problems within family, poor family problem-solving abilities, and low emotional stability associated with youth substance abuse (Reyes et al., 2011). This is further evidenced by several papers linking higher family cohesion and higher communication quality to lower risks of marijuana and other substance use (Cardenas et al., 2022; Rahal et al., 2024). Despite this, variables like nicotine use or community safety are often analyzed separately from marijuana use, even though these issues likely overlap. Interestingly, prior research also suggests that adolescent males tend to exhibit a higher likelihood of substance use than adolescent females (Heerde et al., 2019).
+
+$\quad$This investigation aims to evaluate how perceived quality of home life, reported neighborhood conditions, and reported nicotine use can be used to assess reported marijuana use. This leads us to our research question: how can household happiness, neighborhood safety, sex, and nicotine use be used to predict past 30-day marijuana usage among 8th and 11th grade Iowa public school students? 
+
+$\quad$In order to answer this question, we fit a multivariate logistic regression model using and exploring whether the nicotine and household factors differ between middle and high school students. Our results found that nicotine had a strong positive association on predicted marijuana usage, and that several other variables, including perceived neighborhood safety, household happiness, and parental awareness of wrongdoing are all positively associated with predicted marijuana usage in the previous 30 days. Sex and perceived substance abuse by others living in the home had no significant association with predicted marijuana usage. 
+
+
+
 ## Methodology
+
+$\quad$The data for this study comes from the 2005 Iowa Youth Survey, a regularly completed survey administered by the State of Iowa biennially to 6th, 8th, and 11th grade students in Iowa schools. This dataset is a subset of the entire survey data. Given that the focus of our research is on teen marijuana use, all 6th grade observations were dropped, leading to 2419 observations. Survey questions primarily related to the participant's perception of their home life, school life, use of substances, and other related questions. 
+	
+$\quad$Our key response variable is marijuana usage. The variable in the dataset corresponding to usage is ‘30marijuana’: asking “in the past 30 days, on how many days have you used marijuana (pot, grass, hash, bud, weed)?” This variable was used to coerce a binary outcome variable, considering all those who had used at least once in the past 30 days as a user of marijuana. All observations that had NA values for this question were dropped from the dataset, which was standard practice throughout this research. The graph below shows the proportion of marijuana usage by each key variable. As can be seen, a much higher proportion of those who use nicotine use marijuana than those who do not use nicotine. There are other large differences in proportions, including for grade (11th vs 8th) and youth perception of home happiness, indicating that these are important variables to include in the model.
+
+```{r, echo = F, fig.height = 4, fig.width = 7, message = F}
+library(tidyr)
+survey_prop <- survey %>% dplyr::select(smoke_nic, home_happy_b, home_al_drug_b, grade, 
+                                  n_safe_b, gender, SmokedMaryJane) 
+survey_prop <- survey_prop %>% mutate(eleventh = ifelse(grade == "11th", 1, 0), 
+                                      male = ifelse(gender == "Male", 1, 0)) %>%
+  dplyr::select(-gender, -grade)
+
+survey_prop <- survey_prop %>% rename("11th Grade" = eleventh, "Home Sub Abuse" = home_al_drug_b,
+                                      "Happy Home" = home_happy_b, "Male" = male, 
+                                      "Safe Neighborhood" = n_safe_b, "Nicotine User" = smoke_nic)
+
+survey_prop_long <- pivot_longer(survey_prop, !SmokedMaryJane, names_to= "variable", values_to = "Yes")
+
+survey_group <- survey_prop_long %>% group_by(variable, Yes) %>% 
+  summarize(Marijuana_prop = sum(SmokedMaryJane == 1)/n(), Non_marijuana_prop = sum(SmokedMaryJane == 0)/n())
+
+survey_group <- survey_group %>% mutate(variable_grp = paste0(variable, Yes))
+
+ggplot(survey_group, aes(x = variable, y = Marijuana_prop, fill = as.factor(Yes))) + geom_col() + 
+  labs(y = "Proportion who used Marijuana", fill = "Yes") + theme_classic()
+```
+	
+$\quad$This dataset has a few limitations. The first limitation is that the data is over 20 years old. We should be cautious applying our results to modern teenagers, as they might not align as closely with today’s teenagers. This may be the case due to changes in societal views around marijuana, changing youth behavior in light of new technologies, or other factors, such as the rise of e-cigarettes or alternative marijuana usage methods. Additionally, given that our data set was a survey, participant’s responses might be biased, especially responses pertaining to sensitive topics, such as the admission of substance use. 
+
+The model of choice is a multivariate logistic regression model. Expressed in logit form, the robust model investigating our research question is as follows:
 
 $$\text{log}\frac{\pi(\text{Smoked = 1})}{1 - \pi(\text{Smoked = 1})} = \beta_0 + \beta X$$
 
 $\beta$ is a vector of coefficients and $X$ is a vector of explanatory variables of interest, such as whether the youth agreed that they live in a healthy home, there is drug or alcohol abuse in the home, and whether their neighborhood was safe. Another explanatory variable of interest which has several levels if how often parents are aware of the youth's wrong doing. There were also some control variables to account for demographic differences that likely impact marijuana usage, such as gender and grade level.
 
+$\quad$In order to ensure the validity of inferences from this logistic regression, we assessed several model assumptions. Firstly, the logistic regression assumes each observation is independent of others. Given that the survey was drawn from multiple schools, this assumption may be violated if students from the same school share similar characteristics such as drug policies and peer norms. Secondly, the model assumes the data was obtained through a random sampling process. Lastly, there must be a linear relationship between any continuous explanatory variables and the logit of the outcome, however this assumption is automatically satisfied because all variables used in the model are binary, and thus with only two points per variable, the relationship is always linear.
 
 ## Results
 
@@ -99,21 +141,93 @@ kable(mod_coef, caption = "Model Results", digits = 3) # note: this errors out s
 exp(model$coefficients)
 ```
 
-$\quad$The results indicate that majority of the variables have a significant association with marijuana usage. The largest association was with those who smoke nicotine (cigarettes/cigars). The coefficient on smoking nicotine was 2.932, meaning that smoking nicotine is associated with 18.76 times higher predicted odds of using marijuana. Youth who felt that they had a happy home had a coefficient of -0.615, indicating that feeling they lived in a happy home (compared to those felt that they did not live in a happy home) is associated with a .54 times difference in the odds of using marijuana, holding all other variables constant. There were similar results for youth that felt they lived in a safe neighborhood, with a change in predicted odds of using marijuana of .500 times, holding all other variables constant. Compared to youth who felt that their parents "always" found out when they did something wrong, there was no significant difference in predicted marijuana usage among those who only felt that their parents "often" found found out about their wrongdoings. However, youth who responded "sometimes"(1.78) or "never"(2.21) both saw an increase in their odds of using marijuana, indicating an association between the variables. Youth who felt a person in their home had a drug/alcohol abuse problem were associated with higher predicted odds of using marijuana, but with a p-value of .18, we can not reject the null hypothesis that no association exists. 
+$\quad$The results indicate that the majority of the included variables have a significant association with marijuana usage. The largest association was with those who smoke nicotine (cigarettes/cigars). The coefficient on smoking nicotine was 2.932, meaning that smoking nicotine is associated with 18.76 times higher predicted odds of marijuana usage. Youth who felt that they had a happy home had a coefficient of -0.615, indicating that feeling they lived in a happy home (compared to those felt that they did not live in a happy home) is associated with a .54 times difference in the odds of using marijuana, holding all other variables constant. There were similar results for youth that felt they lived in a safe neighborhood, with a change in predicted odds of using marijuana of .500 times, holding all other variables constant. Compared to youth who felt that their parents "always" found out when they did something wrong, there was no significant difference in predicted marijuana usage among those who only felt that their parents "often" found out about their wrongdoings. However, youth who responded "sometimes"(1.78) or "never"(2.21) both saw an increase in their odds of using marijuana, indicating an association between the variables. Youth who felt a person in their home had a drug/alcohol abuse problem were associated with higher predicted odds of using marijuana, but with a p-value of .18, we can not reject the null hypothesis that no association exists. 
 
-$\quad$Several control variables were also included in the model. As expected, being in 8th grade in comparison to 11th grade, was associated with a change in the odds of using marijuana by .63 times. There was not found to be a significant difference in marijuana usage among gender, when controlling for other variables in the model, as males were found to have an increase in the log odds of using marijuana of 1.11 times, which is not statistically significant from 1 with a p-value of .560. 
+$\quad$Several control variables were also included in the model. As expected, 8th graders were 0.34 times as likely as 11th graders to have used marijuana, holding all other variables constant. There was not found to be a significant difference in marijuana usage between sexes, when controlling for other variables in the model, as males were found to have an increase in the log odds of using marijuana of 1.11 times, which is not significantly different from 1 with a p-value of .560. All p-values come from Wald's tests, which is appropriate because of the large sample size. 
+
+
+$\quad$The dataset contains several other explanatory variables that concern youth's life at home. These variables were not included due to high correlation with variables already in the model (Appendix A). For example, perceived home happiness is strongly correlated with perceived support from those in the home, and moderately correlated with youth's perception of ability to talk to people at home and their feeling of closeness with parents/guardians. Because home happiness is already included in the model, the inclusion of any of these other variables would primarily lead to higher multicollinearity (leading to higher standard errors), but would only slightly improve model fit. Thus, these variables were excluded from the model. 
+
+
 
 ## Discussion
 
-$\quad$Our results indicate that several variables pertaining to a youth's homelife have a significant association with teen marijuana usage, including whether the teen felt they lived in a happy home, lived in a safe neighborhood, whether the teen felt their people in their home had a drug or alcohol problem, and how often a teen's parents find out about their wrong doing. However, our study presents many limitations that prevent causality claims or generalization. The first is that the dataset used is a subset of a survey, so it may not be completely random which participants are included in the data. Another limitation is that this was a survey, so answers may not be completely accurate. There exist concerns that participants would be less willing to share their consumption of substances, oversell their home situation, or vice versa with concerns that teens might find it humorous to provide misleading results that overstate their consumption of substances. 
+$\quad$Our results indicate that several variables pertaining to a youth's homelife have a significant association with teen marijuana usage, including whether the teen felt they lived in a happy home, lived in a safe neighborhood, whether the teen felt that the people in their home had a drug or alcohol problem, and how often a teen's parents find out about their wrongdoing. However, our study presents many limitations that prevent causality claims or generalization. The first is that the dataset used is a subset of a survey, so it may not be completely random which participants are included in the data. Another limitation is the fact that our data was an anonymous survey. Therefore, answers may not be completely accurate. There exist major concerns that participants would be unwilling to share their consumption of substances or their uncomfortable home situation. Conversely, there are concerns that teens might find it humorous to provide misleading results, overstating and misreporting their consumption of substances and their home situation.
 
 \newpage
 
 ## References
 
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+
+\noindent
+
+Cardenas, L. E., Schweer-Collins, M. L., & Stormshak, E. A. (2022). Parental influences on marijuana use in emerging adulthood. Journal of Family Psychology, 36(2), 170–178. https://doi.org/10.1037/fam0000869
+
+CDC. (2024, February 15). Cannabis and Teens. Cannabis and Public Health. https://www.cdc.gov/cannabis/health-effects/cannabis-and-teens.html
+
+Heerde, J. A., Bailey, J. A., Toumbourou, J. W., & Catalano, R. F. (2019). Longitudinal Associations Between the Adolescent Family Environment and Young Adult Substance Use in Australia and the United States. Frontiers in Psychiatry, 10. https://doi.org/10.3389/fpsyt.2019.00821
+
+Rahal, D., Irwin, M. R., & Fuligni, A. J. (2024). Family meals are associated with lower substance use in female adolescents. Family Process. https://doi.org/10.1111/famp.13039
+
+Reyes, M. Q., Bautista, F. J., Soria-Miranda, N., Oleas, D., Guido Mascialino, Ponce, I. V., & Rodas, J. A. (2025). Family and personal factors predisposing adolescents to substance abuse in high-risk urban areas. PLoS ONE, 20(11), e0334072–e0334072. https://doi.org/10.1371/journal.pone.0334072
+
+Stritzel, H. (2021). Peer and Community Influences on Adolescent Substance Use in the Context of Adverse Childhood Experiences. Sociological Perspectives, 65(2), 413–432. https://doi.org/10.1177/07311214211018718
+
 \newpage
 
 ## Appendix
 
+### Appendix A
+
+#### Correlation Plot of Key Variables
+
+```{r, echo = F, message = F, fig.height = 5, fig.width = 5}
+library(corrplot)
+
+survey_corr <- survey |>
+  select(SmokedMaryJane,home_rules_b, home_happy_b, home_al_drug_b, home_close_b, 
+         home_talk_b, home_support_b, home_wrong, home_praise, home_chores, home_know, gender, 
+         grade, smoke_nic)
+
+survey_corr <- survey_corr |>
+  mutate(home_wrong = recode_values(home_wrong,
+    "Never"     ~ 0,
+    "Sometimes" ~ 1,
+    "Often"     ~ 2,
+    "Always"    ~ 3
+  ),
+        home_praise = recode_values(home_praise,
+    "Never"     ~ 0,
+    "Sometimes" ~ 1,
+    "Often"     ~ 2,
+    "Always"    ~ 3
+  ),
+  home_chores = dplyr::recode_values(home_chores,
+    "Never"     ~ 0,
+    "Sometimes" ~ 1,
+    "Often"     ~ 2,
+    "Always"    ~ 3
+  ),
+  home_know = recode_values(home_know,
+    "Never"     ~ 0,
+    "Sometimes" ~ 1,
+    "Often"     ~ 2,
+    "Always"    ~ 3
+  ),
+  gender = ifelse(gender == "Male", 1, 0),
+  grade = ifelse(grade == "11th", 1, 0)
+  )
+
+colnames(survey_corr) <- c("Marijuana Usage", "Home Rules", "Home Happy", "Home Alc/Drug Abuse",
+                               "Close Home", "Home Talk", "Home Support", "Home Wrong", "Home Praise",
+                               "Home Chores", "Home Know", "Gender", "Grade", "Smoke Nicotine")
+
+M <- cor(survey_corr)
+
+corrplot(M, tl.col = "black")
+```
 
 
