@@ -103,17 +103,15 @@ survey_group <- survey_prop_long %>% group_by(variable, Yes) %>%
 
 survey_group <- survey_group %>% mutate(variable_grp = paste0(variable, Yes))
 
-ggplot(survey_group, aes(x = variable, y = Marijuana_prop, fill = as.factor(Yes))) + geom_col() + 
-  labs(y = "Proportion who used Marijuana", fill = "Yes") + theme_classic()
+ggplot(survey_group, aes(x = variable, y = Marijuana_prop, fill = as.factor(Yes))) + geom_col(position = "Dodge") + 
+  labs(y = "Proportion who used Marijuana", fill = "Yes", x = "Variable") + theme_classic()
 ```
 	
 $\quad$This dataset has a few limitations. The first limitation is that the data is over 20 years old. We should be cautious applying our results to modern teenagers, as they might not align as closely with today’s teenagers. This may be the case due to changes in societal views around marijuana, changing youth behavior in light of new technologies, or other factors, such as the rise of e-cigarettes or alternative marijuana usage methods. Additionally, given that our data set was a survey, participant’s responses might be biased, especially responses pertaining to sensitive topics, such as the admission of substance use. 
 
 The model of choice is a multivariate logistic regression model. Expressed in logit form, the robust model investigating our research question is as follows:
 
-$$\text{log}\frac{\pi(\text{Smoked = 1})}{1 - \pi(\text{Smoked = 1})} = \beta_0 + \beta X$$
-
-$\beta$ is a vector of coefficients and $X$ is a vector of explanatory variables of interest, such as whether the youth agreed that they live in a healthy home, there is drug or alcohol abuse in the home, and whether their neighborhood was safe. Another explanatory variable of interest which has several levels if how often parents are aware of the youth's wrong doing. There were also some control variables to account for demographic differences that likely impact marijuana usage, such as gender and grade level.
+$$\text{log}\frac{\pi(\text{Smoked = 1})}{1 - \pi(\text{Smoked = 1})} = \beta_0 + \beta_1\text{hh} + \beta_2\text{d/a aih} + \beta_3\text{grade} + \beta_4\text{sn} + \beta_5\text{sex} + \beta_6nic + B\text{awd}$$
 
 $\quad$In order to ensure the validity of inferences from this logistic regression, we assessed several model assumptions. Firstly, the logistic regression assumes each observation is independent of others. Given that the survey was drawn from multiple schools, this assumption may be violated if students from the same school share similar characteristics such as drug policies and peer norms. Secondly, the model assumes the data was obtained through a random sampling process. Lastly, there must be a linear relationship between any continuous explanatory variables and the logit of the outcome, however this assumption is automatically satisfied because all variables used in the model are binary, and thus with only two points per variable, the relationship is always linear.
 
@@ -170,6 +168,9 @@ CDC. (2024, February 15). Cannabis and Teens. Cannabis and Public Health. https:
 
 Heerde, J. A., Bailey, J. A., Toumbourou, J. W., & Catalano, R. F. (2019). Longitudinal Associations Between the Adolescent Family Environment and Young Adult Substance Use in Australia and the United States. Frontiers in Psychiatry, 10. https://doi.org/10.3389/fpsyt.2019.00821
 
+Iowa Youth Survey. (2005). Health & Human Services.   https://hhs.iowa.gov/about/data-reports/performance-reports/iowa-youth-survey
+
+
 Rahal, D., Irwin, M. R., & Fuligni, A. J. (2024). Family meals are associated with lower substance use in female adolescents. Family Process. https://doi.org/10.1111/famp.13039
 
 Reyes, M. Q., Bautista, F. J., Soria-Miranda, N., Oleas, D., Guido Mascialino, Ponce, I. V., & Rodas, J. A. (2025). Family and personal factors predisposing adolescents to substance abuse in high-risk urban areas. PLoS ONE, 20(11), e0334072–e0334072. https://doi.org/10.1371/journal.pone.0334072
@@ -188,7 +189,7 @@ Stritzel, H. (2021). Peer and Community Influences on Adolescent Substance Use i
 library(corrplot)
 
 survey_corr <- survey |>
-  select(SmokedMaryJane,home_rules_b, home_happy_b, home_al_drug_b, home_close_b, 
+  dplyr::select(SmokedMaryJane,home_rules_b, home_happy_b, home_al_drug_b, home_close_b, 
          home_talk_b, home_support_b, home_wrong, home_praise, home_chores, home_know, gender, 
          grade, smoke_nic)
 
@@ -231,3 +232,22 @@ corrplot(M, tl.col = "black")
 ```
 
 
+### Appendix B
+
+#### Key Variables
+
+\noindent 
+
+Nicotine User (nic) - Binary variable indicating youth used cigarettes or cigars in the last 30 days. 
+
+Happy Home (hh) - I have a happy home. (Strongly agree, Agree, Disagree, Strongly Disagree)
+
+Drug/Alcohol Abuse in the Home (d/a in home) - There are people living in my home who have a serious alcohol or drug problem. (Strongly agree, Agree, Disagree, Strongly Disagree)
+
+Safe Neighborhood (sn) - My neighborhood is a safe place to live. (Strongly agree, Agree, Disagree, Strongly Disagree)
+
+Family Awareness of Wrongdoing (awd) A parent/guardian generally finds out if I have done something wrong, and then punishes me. (Always, Often, Sometimes, Never)
+
+Grade - A dummy variable with 1 corresponding to 11th and 0 to 8th grade. 
+
+Male - A dummy variable with 1 corresponding to Male and 0 Female. 
